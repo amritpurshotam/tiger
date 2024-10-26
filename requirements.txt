@@ -1,3 +1,4 @@
 pandas[parquet]
 sentence-transformers
 torch
+wandb

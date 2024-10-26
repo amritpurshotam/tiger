@@ -22,7 +22,7 @@ setup(
     install_requires=get_requirements("requirements.txt"),
     extras_require={
         "dev": get_requirements("scripts/requirements-dev.txt"),
-        "notebook": get_requirements("scripts/requirements-nb.txt"),
+        "nb": get_requirements("scripts/requirements-nb.txt"),
         "test": get_requirements("scripts/requirements-test.txt"),
     },
 )
