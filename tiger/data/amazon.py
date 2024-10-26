@@ -1,4 +1,3 @@
-import ast
 import gzip
 import itertools
 import os
@@ -134,10 +133,10 @@ class AmazonDataset:
     def __cache_data(self, df: pd.DataFrame, path: str):
         df.to_parquet(path, engine="pyarrow")
 
-    def __parse(self, path) -> Generator[dict]:
+    def __parse(self, path) -> Generator[dict, None, None]:
         g = gzip.open(path, "rb")
         for line in g:
-            yield ast.literal_eval(line)
+            yield eval(line)
 
     def __to_dataframe(self, path) -> pd.DataFrame:
         i = 0
