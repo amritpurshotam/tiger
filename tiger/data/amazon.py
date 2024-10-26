@@ -83,19 +83,7 @@ class AmazonDataset:
             df.loc[:, "categories"] = df.apply(lambda x: list(dict.fromkeys(x["categories"])), axis=1)
             return df
 
-        def drop_rows_with_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-            df.loc[:, "lencat"] = df.apply(lambda x: len(x["categories"]), axis=1)
-            df = df[df["lencat"] > 0]
-            df = df.drop(columns=["lencat"])
-            df = df.dropna()
-            return df
-
-        items = (
-            items.pipe(select_columns)
-            .pipe(flatten_categories)
-            .pipe(remove_duplicate_categories)
-            .pipe(drop_rows_with_missing_values)
-        )
+        items = items.pipe(select_columns).pipe(flatten_categories).pipe(remove_duplicate_categories)
         self.__cache_data(items, self.interim_items_path)
         return items
 
