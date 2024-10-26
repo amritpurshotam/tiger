@@ -1,0 +1,20 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore test and cache directories
+.mypy_cache/
+.pytest_cache/
+
+# Ignore other unnecessary files
+.git/
+.gitignore
+.vscode/
+*.egg-info/
+*.log
+.DS_Store
