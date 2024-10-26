@@ -3,11 +3,10 @@ from sentence_transformers import SentenceTransformer
 
 
 class SentenceEncoder:
-    def __init__(self, embeddings_folder: str, model_cache_folder: str):
+    def __init__(self, model_cache_folder: str):
         self.model = SentenceTransformer(
             "sentence-transformers/sentence-t5-base", device="cuda", cache_folder=model_cache_folder
         )
-        self.embeddings_folder = embeddings_folder
 
     def encode(self, items: pd.DataFrame):
         sentences = items.apply(lambda x: self.__construct_sentence(x), axis=1).tolist()
