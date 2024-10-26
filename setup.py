@@ -1,13 +1,12 @@
 import pathlib
 
-import pkg_resources
 from setuptools import find_packages, setup
 
 
 def get_requirements(requirements_path: str):
     with pathlib.Path(requirements_path).open() as requirements_txt:
         requirements = [
-            str(requirement) for requirement in pkg_resources.parse_requirements(requirements_txt)
+            line.strip() for line in requirements_txt if line.strip() and not line.startswith("#")
         ]
     return requirements
 
