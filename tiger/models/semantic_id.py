@@ -15,6 +15,17 @@ class RQVAE(nn.Module):
             nn.Linear(128, latent_dim),
         )
 
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 256),
+            nn.ReLU(),
+            nn.Linear(256, 512),
+            nn.ReLU(),
+            nn.Linear(512, input_dim),
+        )
+
     def forward(self, x):
         z = self.encoder(x)
-        return z
+        x_recon = self.decoder(z)
+        return x_recon
