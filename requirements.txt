@@ -1,4 +1,5 @@
 pandas[parquet]
+scikit-learn
 sentence-transformers
 torch
 wandb
