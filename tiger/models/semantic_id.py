@@ -38,7 +38,7 @@ class RQVAE(nn.Module):
 
     def quantize(self, level, residual):
         codebook = self.codebooks[level]
-        distance = torch.cdist(residual.unsqueeze(1), codebook.weight.unsqueeze(0), p=2)
+        distance = torch.cdist(residual, codebook.weight)
         semantic_id = torch.argmin(distance, dim=-1).squeeze()
         codeword_embedding = codebook(semantic_id)
         return codeword_embedding, semantic_id
