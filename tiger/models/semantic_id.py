@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F  # noqa: N812
 from sklearn.cluster import KMeans
 
+from tiger.distributions.gumbel import gumbel_softmax_sample
+
 
 class RQVAE(nn.Module):
     def __init__(self, input_dim=768, latent_dim=32, num_codebooks=3, codebook_size=256, beta=0.25):
@@ -36,49 +38,54 @@ class RQVAE(nn.Module):
             [nn.Embedding(codebook_size, latent_dim) for _ in range(num_codebooks)]
         )
 
-    def quantize(self, level, residual):
+    def quantize(self, level, residual, temperature):
         codebook = self.codebooks[level]
         distance = torch.cdist(residual, codebook.weight)
         semantic_id = torch.argmin(distance, dim=-1).squeeze()
-        codeword_embedding = codebook(semantic_id)
+        if self.train:
+            distance = gumbel_softmax_sample(-distance, temperature=temperature)
+            codeword_embedding = distance @ codebook.weight
+        else:
+            codeword_embedding = codebook(semantic_id)
         return codeword_embedding, semantic_id
 
     def initialize_codebooks(self, data_batch):
-        # Perform K-means clustering on the first batch to initialize codebooks
-        z = self.encoder(data_batch).detach().cpu().numpy()
+        with torch.no_grad():
+            z = self.encoder(data_batch).detach().cpu().numpy()
 
-        # Run K-means clustering for each codebook level to get centroids
-        for codebook in self.codebooks:
-            kmeans = KMeans(n_clusters=self.codebook_size, random_state=42)
-            kmeans.fit(z)
-            centroids = kmeans.cluster_centers_
+            for codebook in self.codebooks:
+                kmeans = KMeans(n_clusters=self.codebook_size, random_state=42)
+                kmeans.fit(z)
+                centroids = kmeans.cluster_centers_
 
-            # Load centroids into codebook weights
-            codebook.weight.data.copy_(torch.tensor(centroids, dtype=torch.float32))
+                codebook.weight.data.copy_(torch.tensor(centroids, dtype=torch.float32).to("cuda"))
 
-            # Compute residual for the next level
-            z = z - centroids[kmeans.predict(z)]
+                z = z - centroids[kmeans.predict(z)]
 
-    def forward(self, x):
-        codeword_embeddings = []
-        semantic_ids = []
-        residuals = []
+    def get_semantic_ids(self, x: torch.Tensor, temperature: float):
+        codeword_embeddings_list = []
+        semantic_ids_list = []
+        residuals_list = []
 
         residual = self.encoder(x)
 
         for level in range(self.num_codebooks):
-            residuals.append(residual)
+            residuals_list.append(residual)
 
-            codeword_embedding, semantic_id = self.quantize(level, residual)
-            residual -= codeword_embedding
+            codeword_embedding, semantic_id = self.quantize(level, residual, temperature)
+            residual = residual - codeword_embedding
 
-            codeword_embeddings.append(codeword_embedding)
-            semantic_ids.append(semantic_id)
+            codeword_embeddings_list.append(codeword_embedding)
+            semantic_ids_list.append(semantic_id)
 
-        codeword_embeddings = torch.stack(codeword_embeddings, dim=-1)
-        semantic_ids = torch.stack(semantic_ids, dim=-1)
-        residuals = torch.stack(residuals, dim=-1)
+        codeword_embeddings = torch.stack(codeword_embeddings_list, dim=-1)
+        semantic_ids = torch.stack(semantic_ids_list, dim=-1)
+        residuals = torch.stack(residuals_list, dim=-1)
 
+        return codeword_embeddings, semantic_ids, residuals
+
+    def forward(self, x, temperature):
+        codeword_embeddings, _, residuals = self.get_semantic_ids(x, temperature)
         z_hat = codeword_embeddings.sum(axis=-1)
         x_hat = self.decoder(z_hat)
 
@@ -86,7 +93,7 @@ class RQVAE(nn.Module):
         rqvae_loss = self.compute_rqvae_loss(codeword_embeddings, residuals)
         loss = (recon_loss + rqvae_loss).mean()  # take mean across batch
 
-        return x_hat, loss
+        return loss
 
     def compute_rqvae_loss(self, codeword_embeddings, residuals):
         loss = 0
