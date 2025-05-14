@@ -7,12 +7,20 @@ from tiger.distributions.gumbel import gumbel_softmax_sample
 
 
 class RQVAE(nn.Module):
-    def __init__(self, input_dim=768, latent_dim=32, num_codebooks=3, codebook_size=256, beta=0.25):
+    def __init__(
+        self,
+        codebook_sizes: list[int],
+        input_dim=768,
+        latent_dim=32,
+        beta=0.25,
+        use_gumbel=False,
+    ):
         super(RQVAE, self).__init__()
 
-        self.num_codebooks = num_codebooks
-        self.codebook_size = codebook_size
+        self.num_codebooks = len(codebook_sizes)
+        self.codebook_sizes = codebook_sizes
         self.beta = beta
+        self.use_gumbel = use_gumbel
 
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 512),
@@ -35,14 +43,14 @@ class RQVAE(nn.Module):
         )
 
         self.codebooks = nn.ModuleList(
-            [nn.Embedding(codebook_size, latent_dim) for _ in range(num_codebooks)]
+            [nn.Embedding(codebook_size, latent_dim) for codebook_size in self.codebook_sizes]
         )
 
     def quantize(self, level, residual, temperature):
         codebook = self.codebooks[level]
         distance = torch.cdist(residual, codebook.weight)
         semantic_id = torch.argmin(distance, dim=-1).squeeze()
-        if self.train:
+        if self.train and self.use_gumbel:
             distance = gumbel_softmax_sample(-distance, temperature=temperature)
             codeword_embedding = distance @ codebook.weight
         else:
@@ -54,7 +62,7 @@ class RQVAE(nn.Module):
             z = self.encoder(data_batch).detach().cpu().numpy()
 
             for codebook in self.codebooks:
-                kmeans = KMeans(n_clusters=self.codebook_size, random_state=42)
+                kmeans = KMeans(n_clusters=codebook.weight.shape[0], random_state=42)
                 kmeans.fit(z)
                 centroids = kmeans.cluster_centers_
 
