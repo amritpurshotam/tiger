@@ -1,11 +1,13 @@
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
+from tiger import config
+
 
 class SentenceEncoder:
     def __init__(self, model_cache_folder: str):
         self.model = SentenceTransformer(
-            "sentence-transformers/sentence-t5-base", device="cuda", cache_folder=model_cache_folder
+            config.SENTENCE_MODEL_NAME, device="cuda", cache_folder=model_cache_folder
         )
 
     def encode(self, items: pd.DataFrame):
