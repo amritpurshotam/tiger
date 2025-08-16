@@ -13,7 +13,7 @@ def get_requirements(requirements_path: str):
 
 setup(
     name="tiger",
-    packages=find_packages(include=["tiger"]),
+    packages=find_packages(include=["tiger"], exclude=[".venv"]),
     version="1.0.0",
     description="",
     author="",
