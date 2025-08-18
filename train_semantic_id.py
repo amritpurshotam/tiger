@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from tiger.data.sentence_embedding import SentenceEmbeddingsDataset
-from tiger.models.semantic_id import RQVAE
+from tiger.models.rqvae import RQVAE
 
 BATCH_SIZE = 1024
 LR = 0.4

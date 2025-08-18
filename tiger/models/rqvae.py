@@ -4,15 +4,18 @@ import torch.nn.functional as F  # noqa: N812
 from sklearn.cluster import KMeans
 
 from tiger.distributions.gumbel import gumbel_softmax_sample
+from tiger.models.encoder import MLP
 
 
 class RQVAE(nn.Module):
     def __init__(
         self,
         codebook_sizes: list[int],
-        input_dim=768,
-        latent_dim=32,
-        beta=0.25,
+        input_dim: int,
+        hidden_dims: list[int],
+        latent_dim: int,
+        beta: float,
+        normalize: bool,
         use_gumbel=False,
     ):
         super(RQVAE, self).__init__()
@@ -22,25 +25,8 @@ class RQVAE(nn.Module):
         self.beta = beta
         self.use_gumbel = use_gumbel
 
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, latent_dim),
-        )
-
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 256),
-            nn.ReLU(),
-            nn.Linear(256, 512),
-            nn.ReLU(),
-            nn.Linear(512, input_dim),
-        )
+        self.encoder = MLP(input_dim, hidden_dims, latent_dim, normalize)
+        self.decoder = MLP(latent_dim, hidden_dims[::-1], input_dim, normalize)
 
         self.codebooks = nn.ModuleList(
             [nn.Embedding(codebook_size, latent_dim) for codebook_size in self.codebook_sizes]
