@@ -90,10 +90,11 @@ class RQVAE(nn.Module):
         return loss
 
     def compute_rqvae_loss(self, codeword_embeddings, residuals):
-        loss = 0
-        loss += (  # sum across codebooks then latent_dim
-            F.mse_loss(codeword_embeddings, residuals.detach(), reduction="none").sum(axis=[-1, -2])
-            + self.beta
-            * F.mse_loss(codeword_embeddings.detach(), residuals, reduction="none").sum(axis=[-1, -2])
+        codebook_loss = F.mse_loss(codeword_embeddings, residuals.detach(), reduction="none").sum(
+            axis=[-1, -2]
         )
+        commitment_loss = F.mse_loss(codeword_embeddings.detach(), residuals, reduction="none").sum(
+            axis=[-1, -2]
+        )
+        loss = codebook_loss + self.beta * commitment_loss
         return loss
