@@ -20,7 +20,8 @@ select = [
 ]
 
 ignore = [
-    "D1", # Missing docstrings
+    "D1",   # Missing docstrings
+    "N812",
 ]
 
 [tool.ruff.lint.mccabe]
