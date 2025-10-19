@@ -53,7 +53,7 @@ class RQVAE(nn.Module):
                     gradient_flow_mode=gradient_flow_mode,
                     distance_mode=distance_mode,
                 )
-                for i in range(num_codebooks)
+                for _ in range(num_codebooks)
             ]
         )
 
