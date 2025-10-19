@@ -1,6 +1,7 @@
-matplotlib
-pandas[parquet]
-scikit-learn
-sentence-transformers
-torch
-wandb
+einops==0.8.*
+matplotlib==3.10.*
+pandas[parquet]==2.3.*
+scikit-learn==1.7.*
+sentence-transformers==5.1.*
+torch==2.8.*
+wandb==0.21.*
