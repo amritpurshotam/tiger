@@ -15,13 +15,17 @@ class RqVaeOutput(NamedTuple):
     embeddings: Tensor
     residuals: Tensor
     sem_ids: Tensor
-    quantize_loss: Tensor
+    rqvae_loss: Tensor
+    codebook_losses: list[Tensor]
+    commitment_losses: list[Tensor]
 
 
 class RqVaeComputedLosses(NamedTuple):
     loss: Tensor
     reconstruction_loss: Tensor
     rqvae_loss: Tensor
+    codebook_losses: list[Tensor]
+    commitment_losses: list[Tensor]
     embs_norm: Tensor
     p_unique_ids: Tensor
 
@@ -68,23 +72,28 @@ class RQVAE(nn.Module):
     def get_semantic_ids(self, x: Tensor, temperature: float = 1e-3) -> RqVaeOutput:
         res = self.encode(x)
 
-        quantize_loss = torch.tensor(0)
-        embs, residuals, sem_ids = [], [], []
+        rqvae_loss = 0
+        embs, residuals, sem_ids, codebook_losses, commitment_losses = [], [], [], [], []
 
         for codebook in self.codebooks:
             residuals.append(res)
             quantized: QuantizeOutput = codebook(res, temperature)
-            quantize_loss += quantized.loss
-            emb, sem_id = quantized.embeddings, quantized.ids
-            res = res - emb
-            embs.append(emb)
-            sem_ids.append(sem_id)
+
+            rqvae_loss += quantized.loss  # type: ignore
+            codebook_losses.append(quantized.codebook_loss.mean())
+            commitment_losses.append(quantized.commitment_loss.mean())
+
+            res = res - quantized.embeddings
+            embs.append(quantized.embeddings)
+            sem_ids.append(quantized.sem_ids)
 
         return RqVaeOutput(
             embeddings=rearrange(embs, "c b d -> b d c"),  # type: ignore[arg-type]
             residuals=rearrange(residuals, "c b d -> b d c"),  # type: ignore[arg-type]
             sem_ids=rearrange(sem_ids, "c b -> b c"),  # type: ignore[arg-type]
-            quantize_loss=quantize_loss,
+            rqvae_loss=rqvae_loss,  # type: ignore
+            codebook_losses=codebook_losses,
+            commitment_losses=commitment_losses,
         )
 
     def forward(self, x: Tensor, temperature: float):
@@ -94,8 +103,8 @@ class RQVAE(nn.Module):
         x_hat = self.decode(z_hat)
 
         recon_loss = self.recon_loss(x_hat, x)
-        codebook_loss = quantized.quantize_loss
-        loss = (recon_loss + codebook_loss).mean()
+        rqvae_loss = quantized.rqvae_loss
+        loss = (recon_loss + rqvae_loss).mean()
 
         with torch.no_grad():
             # Compute debug ID statistics
@@ -113,7 +122,9 @@ class RQVAE(nn.Module):
         return RqVaeComputedLosses(
             loss=loss,
             reconstruction_loss=recon_loss.mean(),
-            rqvae_loss=codebook_loss.mean(),
+            rqvae_loss=rqvae_loss.mean(),
+            codebook_losses=quantized.codebook_losses,
+            commitment_losses=quantized.commitment_losses,
             embs_norm=embs_norm,
             p_unique_ids=p_unique_ids,
         )

@@ -1,5 +1,13 @@
+from typing import NamedTuple
+
 import torch.nn.functional as F
 from torch import Tensor, nn
+
+
+class QuantizeLossOutput(NamedTuple):
+    loss: Tensor
+    codebook_loss: Tensor
+    commitment_loss: Tensor
 
 
 class ReconstructionLoss(nn.Module):
@@ -16,8 +24,13 @@ class QuantizeLoss(nn.Module):
         super().__init__()
         self.commitment_weight = commitment_weight
 
-    def forward(self, residual: Tensor, emb: Tensor) -> Tensor:
+    def forward(self, residual: Tensor, emb: Tensor) -> QuantizeLossOutput:
         codebook_loss = F.mse_loss(residual.detach(), emb, reduction="none").sum(dim=[-1])
         commitment_loss = F.mse_loss(residual, emb.detach(), reduction="none").sum(dim=[-1])
+        loss = codebook_loss + self.commitment_weight * commitment_loss
 
-        return codebook_loss + self.commitment_weight * commitment_loss
+        return QuantizeLossOutput(
+            loss=loss,
+            codebook_loss=codebook_loss,
+            commitment_loss=commitment_loss,
+        )

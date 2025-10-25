@@ -8,13 +8,15 @@ from torch import Tensor, nn
 from tiger.distributions.gumbel import gumbel_softmax_sample
 from tiger.models.enums import QuantizeDistance, QuantizeGradientFlow
 from tiger.models.kmeans import Kmeans
-from tiger.models.loss import QuantizeLoss
+from tiger.models.loss import QuantizeLoss, QuantizeLossOutput
 
 
 class QuantizeOutput(NamedTuple):
     embeddings: Tensor
-    ids: Tensor
+    sem_ids: Tensor
     loss: Tensor
+    codebook_loss: Tensor
+    commitment_loss: Tensor
 
 
 def efficient_rotation_trick_transform(u, q, e):
@@ -61,7 +63,7 @@ class Quantize(nn.Module):
         else:
             raise ValueError("Unsupported distance mode.")
 
-        ids = torch.argmin(dist.detach(), dim=-1)
+        sem_ids = torch.argmin(dist.detach(), dim=-1)
 
         if self.training:
             if self.gradient_flow_mode == QuantizeGradientFlow.GUMBEL_SOFTMAX:
@@ -69,10 +71,10 @@ class Quantize(nn.Module):
                 emb = weights @ codebook
                 emb_out = emb
             elif self.gradient_flow_mode == QuantizeGradientFlow.STE:
-                emb = self.get_item_embeddings(ids)
+                emb = self.get_item_embeddings(sem_ids)
                 emb_out = x + (emb - x).detach()
             elif self.gradient_flow_mode == QuantizeGradientFlow.ROTATION_TRICK:
-                emb = self.get_item_embeddings(ids)
+                emb = self.get_item_embeddings(sem_ids)
                 emb_out = efficient_rotation_trick_transform(
                     x / (x.norm(dim=-1, keepdim=True) + 1e-8),
                     emb / (emb.norm(dim=-1, keepdim=True) + 1e-8),
@@ -87,12 +89,18 @@ class Quantize(nn.Module):
             else:
                 raise ValueError("Unsupported Gradient Flow Mode.")
 
-            loss = self.quantize_loss(x, emb)
+            loss_output: QuantizeLossOutput = self.quantize_loss(x, emb)
         else:
-            emb_out = self.get_item_embeddings(ids)
-            loss = self.quantize_loss(x, emb_out)
+            emb_out = self.get_item_embeddings(sem_ids)
+            loss_output = self.quantize_loss(x, emb_out)
 
-        return QuantizeOutput(embeddings=emb_out, ids=ids, loss=loss)
+        return QuantizeOutput(
+            embeddings=emb_out,
+            sem_ids=sem_ids,
+            loss=loss_output.loss,
+            codebook_loss=loss_output.codebook_loss,
+            commitment_loss=loss_output.commitment_loss,
+        )
 
     def get_item_embeddings(self, item_ids) -> Tensor:
         return self.embedding(item_ids)
