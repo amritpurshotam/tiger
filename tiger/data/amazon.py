@@ -12,6 +12,7 @@ class AmazonDataset:
         category: str,
         year: int,
         min_reviews_per_user: int,
+        max_sequence_length: int,
         data_dir: str,
     ):
         self.category = category
@@ -21,11 +22,13 @@ class AmazonDataset:
         self.interim_items_path = f"{data_dir}/interim/{self.year}/meta_{self.category}.parquet"
         self.raw_reviews_path = f"{data_dir}/raw/{self.year}/reviews_{self.category}.json.gz"
         self.interim_reviews_path = f"{data_dir}/interim/{self.year}/reviews_{self.category}.parquet"
+        self.interim_sequences_path = f"{data_dir}/interim/{self.year}/sequences_{self.category}.parquet"
 
         self.min_reviews_per_user = min_reviews_per_user
 
         self.items = self.get_items()
         self.reviews = self.get_reviews()
+        self.sequences = self.get_sequences(k=max_sequence_length)
 
     def download(self):
         raise NotImplementedError()
@@ -46,6 +49,13 @@ class AmazonDataset:
         reviews = self.__to_dataframe(self.raw_reviews_path)
         reviews = self.__process_reviews(reviews, valid_item_ids)
         return reviews
+
+    def get_sequences(self, k: int = 20):
+        if self.__is_processed(self.interim_sequences_path):
+            return self.__load_cache_data(self.interim_sequences_path)
+
+        sequences = self.__process_sequences(self.reviews, k)
+        return sequences
 
     def calculate_stats(self):
         num_users = self.reviews["reviewerID"].unique().shape[0]
@@ -114,6 +124,31 @@ class AmazonDataset:
         )
         self.__cache_data(reviews, self.interim_reviews_path)
         return reviews
+
+    def __process_sequences(self, reviews: pd.DataFrame, k: int) -> pd.DataFrame:
+        def filter_last_k_items(df: pd.DataFrame, k: int) -> pd.DataFrame:
+            df.loc[:, "rank"] = (
+                df.sort_values(["reviewerID", "unixReviewTime"], ascending=[True, False])
+                .groupby("reviewerID")["unixReviewTime"]
+                .rank(method="first", ascending=False)
+            )
+
+            df = df[df["rank"] <= k]
+            df = df.drop(columns=["rank"])
+            return df
+
+        def make_sequences(df: pd.DataFrame) -> pd.DataFrame:
+            df = (
+                df.sort_values(["reviewerID", "unixReviewTime"], ascending=[True, False])
+                .groupby("reviewerID")["asin"]
+                .apply(list)
+                .reset_index()
+            )
+            return df
+
+        sequences = reviews.pipe(filter_last_k_items, k=k).pipe(make_sequences)
+        self.__cache_data(sequences, self.interim_sequences_path)
+        return sequences
 
     def __load_cache_data(self, path: str):
         return pd.read_parquet(path, engine="pyarrow")
