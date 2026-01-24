@@ -32,9 +32,3 @@ max-complexity = 10
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
-[tool.mypy]
-python_version = "3.10"
-strict_optional = false
-ignore_missing_imports = true
-exclude = "scripts"
