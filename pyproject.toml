@@ -1,6 +1,32 @@
+[project]
+name = "tiger"
+version = "1.0.0"
+description = "LLM x RecSys hybrid with Semantic IDs"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "einops>=0.8.2",
+    "matplotlib>=3.10.8",
+    "pandas[parquet]>=3.0.0",
+    "scikit-learn>=1.8.0",
+    "sentence-transformers>=5.2.2",
+    "torch>=2.10.0",
+    "wandb>=0.25.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+torchvision = { index = "pytorch-cu130" }
+torchaudio = { index = "pytorch-cu130" }
+
 [tool.ruff]
 line-length = 110
-target-version = "py310"
+target-version = "py314"
 exclude = ["scripts"]
 
 [tool.ruff.lint]
@@ -21,7 +47,7 @@ select = [
 
 ignore = [
     "D1",   # Missing docstrings
-    "N812",
+    "N812", # lowercase imported as non lowercase
 ]
 
 [tool.ruff.lint.mccabe]
@@ -32,3 +58,10 @@ max-complexity = 10
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[dependency-groups]
+dev = ["pytest>=9.0.2", "ruff>=0.15.1", "ty>=0.0.17"]
+nb = [
+    "ipywidgets>=8.1.8",
+    "jupyterlab>=4.5.4",
+]
