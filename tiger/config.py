@@ -1,2 +1,4 @@
 MIN_REVIEWS_PER_USER = 5
 SENTENCE_MODEL_NAME = "sentence-transformers/sentence-t5-xl"
+SEQUENCE_LENGTH = 20
+AMAZON_DS_YEAR = 2014

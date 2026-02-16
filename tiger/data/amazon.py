@@ -33,7 +33,7 @@ class AmazonDataset:
     def download(self):
         raise NotImplementedError()
 
-    def get_items(self):
+    def get_items(self) -> pd.DataFrame:
         if self.__is_processed(self.interim_items_path):
             return self.__load_cache_data(self.interim_items_path)
 
@@ -41,7 +41,7 @@ class AmazonDataset:
         items = self.__process_items(items)
         return items
 
-    def get_reviews(self):
+    def get_reviews(self) -> pd.DataFrame:
         if self.__is_processed(self.interim_reviews_path):
             return self.__load_cache_data(self.interim_reviews_path)
 
@@ -50,7 +50,7 @@ class AmazonDataset:
         reviews = self.__process_reviews(reviews, valid_item_ids)
         return reviews
 
-    def get_sequences(self, k: int = 20):
+    def get_sequences(self, k: int = 20) -> pd.DataFrame:
         if self.__is_processed(self.interim_sequences_path):
             return self.__load_cache_data(self.interim_sequences_path)
 
@@ -62,6 +62,7 @@ class AmazonDataset:
         num_items = self.reviews["asin"].unique().shape[0]
         num_reviews = self.reviews.shape[0]
         sparsity = 1 - num_reviews / (num_users * num_items)
+        seq_lens = self.sequences.apply(lambda x: len(x["asin"]), axis=1)
         stats = {
             "dataset": f"{self.category}",
             "num_users": num_users,
@@ -71,14 +72,17 @@ class AmazonDataset:
             "median_reviews_per_user": self.reviews.groupby("reviewerID")["reviewerID"].count().median(),
             "mean_reviews_per_item": self.reviews.groupby("asin")["asin"].count().mean(),
             "sparsity": sparsity,
+            "mean_seq_len": seq_lens.mean(),
+            "min_seq_len": seq_lens.min(),
+            "max_seq_len": seq_lens.max(),
         }
         return stats
 
     def __is_processed(self, path: str):
         return os.path.exists(path)
 
-    def __process_items(self, items: pd.DataFrame):
-        def select_columns(df: pd.DataFrame, cols: list = None):
+    def __process_items(self, items: pd.DataFrame) -> pd.DataFrame:
+        def select_columns(df: pd.DataFrame, cols: list[str] | None = None):
             if cols is None:
                 cols = ["asin", "title", "brand", "categories", "description", "price"]
             return df[cols]
@@ -110,7 +114,7 @@ class AmazonDataset:
             df = df[df[col] >= k]
             return df
 
-        def select_columns(df: pd.DataFrame, cols: list = None) -> pd.DataFrame:
+        def select_columns(df: pd.DataFrame, cols: list[str] | None = None) -> pd.DataFrame:
             if cols is None:
                 cols = ["reviewerID", "asin", "unixReviewTime"]
             df = df[cols]
@@ -139,7 +143,7 @@ class AmazonDataset:
 
         def make_sequences(df: pd.DataFrame) -> pd.DataFrame:
             df = (
-                df.sort_values(["reviewerID", "unixReviewTime"], ascending=[True, False])
+                df.sort_values(["reviewerID", "unixReviewTime"], ascending=[True, True])
                 .groupby("reviewerID")["asin"]
                 .apply(list)
                 .reset_index()
