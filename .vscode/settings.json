@@ -7,6 +7,19 @@
       },
       "editor.defaultFormatter": "charliermarsh.ruff",
     },
+    "[jupyter]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports.ruff": "explicit",
+      },
+      "editor.defaultFormatter": "charliermarsh.ruff",
+    },
+    "notebook.formatOnSave.enabled": true,
+    "notebook.codeActionsOnSave": {
+      "notebook.source.fixAll": "explicit",
+      "notebook.source.organizeImports": "explicit",
+    },
     "ruff.importStrategy": "fromEnvironment",
     "ruff.organizeImports": true,
     "python.testing.pytestArgs": [

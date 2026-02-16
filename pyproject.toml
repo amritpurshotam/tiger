@@ -28,6 +28,7 @@ torchaudio = { index = "pytorch-cu130" }
 line-length = 110
 target-version = "py314"
 exclude = ["scripts"]
+extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
@@ -61,7 +62,4 @@ convention = "google"
 
 [dependency-groups]
 dev = ["pytest>=9.0.2", "ruff>=0.15.1", "ty>=0.0.17"]
-nb = [
-    "ipywidgets>=8.1.8",
-    "jupyterlab>=4.5.4",
-]
+nb = ["ipywidgets>=8.1.8", "jupyterlab>=4.5.4"]
