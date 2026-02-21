@@ -24,11 +24,28 @@ torch = { index = "pytorch-cu130" }
 torchvision = { index = "pytorch-cu130" }
 torchaudio = { index = "pytorch-cu130" }
 
+[tool.uv]
+package = true
+
+[build-system]
+requires = [
+    "uv_build>=0.10.4,<0.11",
+]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tiger"
+module-root = ""
+
 [tool.ruff]
 line-length = 110
 target-version = "py314"
-exclude = ["scripts"]
-extend-include = ["*.ipynb"]
+exclude = [
+    "scripts",
+]
+extend-include = [
+    "*.ipynb",
+]
 
 [tool.ruff.lint]
 select = [
@@ -55,11 +72,20 @@ ignore = [
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-"**/test*.py" = ["S101"]
+"**/test*.py" = [
+    "S101",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [dependency-groups]
-dev = ["pytest>=9.0.2", "ruff>=0.15.2", "ty>=0.0.18"]
-nb = ["ipywidgets>=8.1.8", "jupyterlab>=4.5.4"]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.2",
+    "ty>=0.0.18",
+]
+nb = [
+    "ipywidgets>=8.1.8",
+    "jupyterlab>=4.5.4",
+]
