@@ -61,5 +61,5 @@ max-complexity = 10
 convention = "google"
 
 [dependency-groups]
-dev = ["pytest>=9.0.2", "ruff>=0.15.1", "ty>=0.0.17"]
+dev = ["pytest>=9.0.2", "ruff>=0.15.2", "ty>=0.0.18"]
 nb = ["ipywidgets>=8.1.8", "jupyterlab>=4.5.4"]
