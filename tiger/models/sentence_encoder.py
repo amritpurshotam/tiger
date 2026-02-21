@@ -1,14 +1,10 @@
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
-from tiger import config
-
 
 class SentenceEncoder:
-    def __init__(self, model_cache_folder: str):
-        self.model = SentenceTransformer(
-            config.SENTENCE_MODEL_NAME, device="cuda", cache_folder=model_cache_folder
-        )
+    def __init__(self, model_name: str, model_cache_folder: str):
+        self.model = SentenceTransformer(model_name, device="cuda", cache_folder=model_cache_folder)
 
     def encode(self, items: pd.DataFrame):
         sentences = items.apply(lambda x: self.__construct_sentence(x), axis=1).tolist()

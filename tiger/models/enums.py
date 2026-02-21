@@ -1,12 +1,12 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class QuantizeGradientFlow(Enum):
-    GUMBEL_SOFTMAX = 1
-    STE = 2
-    ROTATION_TRICK = 3
+class QuantizeGradientFlow(StrEnum):
+    GUMBEL_SOFTMAX = "gumbel"
+    STE = "ste"
+    ROTATION_TRICK = "rotation_trick"
 
 
-class QuantizeDistance(Enum):
-    EUCLIDEAN = 1
-    COSINE = 2
+class QuantizeDistance(StrEnum):
+    EUCLIDEAN = "euclidean"
+    COSINE = "cosine"

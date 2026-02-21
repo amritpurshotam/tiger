@@ -1,0 +1,38 @@
+dataset:
+  min_reviews_per_user: 5
+  sentence_model: "sentence-transformers/sentence-t5-xl"
+  sentence_model_dim: 768
+  sequence_length: 20
+  amazon_year: 2014
+
+rqvae:
+  num_codebooks: 3
+  codebook_size: 256
+  latent_dim: 32
+  beta: 0.25
+  hidden_dims: [512, 256, 128]
+  distance_mode: "euclidean"
+  gradient_flow_mode: "rotation_trick"
+  normalize: false
+
+rqvae_train:
+  batch_size: 1024
+  lr: 4e-4
+  max_lr: 0.01
+  num_epochs: 20000
+  temp: 1
+  min_temp: 0.01
+  anneal_rate: 3e-5
+  step_size: 20
+  val_split: 0.05
+
+t5:
+  num_encoders: 4
+  num_decoders: 4
+  num_heads: 6
+  head_dim: 64
+  ff_dim: 1024
+  dropout: 0.1
+  token_dim: 128
+  user_num_bins: 2000
+  padding_value: -1
